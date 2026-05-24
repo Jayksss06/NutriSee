@@ -30,7 +30,7 @@ class BmiWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -121,7 +121,7 @@ class BmiWidget extends StatelessWidget {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withAlpha((0.15 * 255).round()),
                           blurRadius: 4,
                         ),
                       ],

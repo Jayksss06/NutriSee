@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../utils/app_theme.dart';
 
+// weeklyData format: List<{ 'date': String, 'calories': int,
+//                            'protein': double, 'carbs': double, 'fat': double }>
 class NutritionChartWidget extends StatefulWidget {
   final List<Map<String, dynamic>> weeklyData;
 
@@ -16,15 +18,13 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
   int _selectedWeek = 0;
   final List<String> _periods = [
     'Minggu ini',
-    'mgg lalu',
+    'Mgg lalu',
     '2 mgg lalu',
-    '3 mgg lalu'
+    '3 mgg lalu',
   ];
 
-  int get _totalCalories {
-    return widget.weeklyData
-        .fold(0, (sum, d) => sum + (d['calories'] as int));
-  }
+  int get _totalCalories =>
+      widget.weeklyData.fold(0, (sum, d) => sum + (d['calories'] as int? ?? 0));
 
   int get _avgCalories {
     if (widget.weeklyData.isEmpty) return 0;
@@ -40,7 +40,7 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -96,46 +96,26 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$_totalCalories',
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('$_totalCalories',
                     style: GoogleFonts.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Total Kalori',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                Text('Total Kalori',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$_avgCalories',
+                        fontSize: 12, color: AppColors.textSecondary)),
+              ]),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text('$_avgCalories',
                     style: GoogleFonts.inter(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    'Rerata Harian',
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary)),
+                Text('Rerata Harian',
                     style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
+                        fontSize: 12, color: AppColors.textSecondary)),
+              ]),
             ],
           ),
           const SizedBox(height: 20),
@@ -146,22 +126,30 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
                 ? Center(
                     child: Text(
                       'Belum ada data nutrisi',
-                      style: GoogleFonts.inter(color: AppColors.textLight),
+                      style:
+                          GoogleFonts.inter(color: AppColors.textLight),
                     ),
                   )
                 : BarChart(
                     BarChartData(
                       alignment: BarChartAlignment.spaceAround,
                       maxY: widget.weeklyData
-                              .map((d) => (d['calories'] as int).toDouble())
+                              .map((d) =>
+                                  (d['calories'] as int? ?? 0).toDouble())
                               .reduce((a, b) => a > b ? a : b) *
                           1.3,
-                      barGroups: widget.weeklyData.asMap().entries.map((e) {
+                      barGroups:
+                          widget.weeklyData.asMap().entries.map((e) {
                         final d = e.value;
-                        final cal = (d['calories'] as int).toDouble();
-                        final protein = (d['protein'] as double);
-                        final carbs = (d['carbs'] as double);
-                        final fat = (d['fat'] as double);
+                        final cal =
+                            (d['calories'] as int? ?? 0).toDouble();
+                        // ✅ safe cast dengan fallback 0.0
+                        final protein =
+                            (d['protein'] as num?)?.toDouble() ?? 0.0;
+                        final carbs =
+                            (d['carbs'] as num?)?.toDouble() ?? 0.0;
+                        final fat =
+                            (d['fat'] as num?)?.toDouble() ?? 0.0;
 
                         return BarChartGroupData(
                           x: e.key,
@@ -174,8 +162,8 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
                               rodStackItems: [
                                 BarChartRodStackItem(
                                     0, protein, AppColors.proteinColor),
-                                BarChartRodStackItem(
-                                    protein, protein + carbs, AppColors.karboColor),
+                                BarChartRodStackItem(protein,
+                                    protein + carbs, AppColors.karboColor),
                                 BarChartRodStackItem(
                                     protein + carbs,
                                     protein + carbs + fat,
@@ -190,7 +178,7 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
-                              final days = [
+                              const days = [
                                 'S', 'S', 'R', 'K', 'J', 'S', 'M'
                               ];
                               final idx = value.toInt();
@@ -214,7 +202,8 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => FlLine(
+                        getDrawingHorizontalLine: (value) =>
+                            const FlLine(
                           color: AppColors.borderColor,
                           strokeWidth: 1,
                         ),
@@ -254,13 +243,9 @@ class _NutritionChartWidgetState extends State<NutritionChartWidget> {
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }

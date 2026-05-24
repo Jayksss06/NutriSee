@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../utils/app_theme.dart';
 
 class MacroCard extends StatelessWidget {
   final String label;
@@ -52,7 +51,7 @@ class MacroCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.white.withOpacity(0.25),
+              backgroundColor: Colors.white.withAlpha((0.25 * 255).round()),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 5,
             ),

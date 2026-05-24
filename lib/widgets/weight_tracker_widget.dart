@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../models/user_model.dart';
+import '../models/weight_log_model.dart';   // ✅ fix: WeightLogModel, bukan WeightEntry
 import '../utils/app_theme.dart';
 
 class WeightTrackerWidget extends StatefulWidget {
-  final List<WeightEntry> weightHistory;
+  final List<WeightLogModel> weightHistory;  // ✅ fix type
 
   const WeightTrackerWidget({super.key, required this.weightHistory});
 
@@ -21,23 +21,25 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
   List<FlSpot> get _spots {
     if (widget.weightHistory.isEmpty) return [];
     return widget.weightHistory.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), e.value.weight);
+      return FlSpot(e.key.toDouble(), e.value.weight); // ✅ .weight sama
     }).toList();
   }
 
   double get _minY {
     if (widget.weightHistory.isEmpty) return 80;
-    return (widget.weightHistory.map((e) => e.weight).reduce(
-              (a, b) => a < b ? a : b) -
-          5)
+    return (widget.weightHistory
+                .map((e) => e.weight)
+                .reduce((a, b) => a < b ? a : b) -
+            5)
         .floorToDouble();
   }
 
   double get _maxY {
     if (widget.weightHistory.isEmpty) return 115;
-    return (widget.weightHistory.map((e) => e.weight).reduce(
-              (a, b) => a > b ? a : b) +
-          5)
+    return (widget.weightHistory
+                .map((e) => e.weight)
+                .reduce((a, b) => a > b ? a : b) +
+            5)
         .ceilToDouble();
   }
 
@@ -50,7 +52,7 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -76,17 +78,16 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                 onTap: () => setState(() => _selectedPeriod = e.key),
                 child: Container(
                   margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : Colors.transparent,
+                    color:
+                        isSelected ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     e.value,
-                    style: GoogleFonts.poppins(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: isSelected
@@ -106,9 +107,7 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                 ? Center(
                     child: Text(
                       'Belum ada data berat badan',
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textLight,
-                      ),
+                      style: GoogleFonts.inter(color: AppColors.textLight),
                     ),
                   )
                 : LineChart(
@@ -118,7 +117,7 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => FlLine(
+                        getDrawingHorizontalLine: (value) => const FlLine(
                           color: AppColors.borderColor,
                           strokeWidth: 1,
                         ),
@@ -130,7 +129,7 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                             reservedSize: 42,
                             getTitlesWidget: (value, meta) => Text(
                               '${value.toInt()}kg',
-                              style: GoogleFonts.poppins(
+                              style: GoogleFonts.inter(
                                 fontSize: 10,
                                 color: AppColors.textLight,
                               ),
@@ -147,7 +146,7 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                               }
                               return Text(
                                 _days[idx],
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.inter(
                                   fontSize: 10,
                                   color: AppColors.textLight,
                                 ),
@@ -170,7 +169,8 @@ class _WeightTrackerWidgetState extends State<WeightTrackerWidget> {
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: AppColors.primary.withOpacity(0.08),
+                            color: AppColors.primary
+                                .withAlpha((0.08 * 255).round()),
                           ),
                         ),
                       ],

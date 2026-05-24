@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../providers/app_provider.dart';
 import '../utils/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -26,31 +26,29 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() async {
-    // Melepaskan fokus dari input teks
     FocusManager.instance.primaryFocus?.unfocus();
+    if (!_formKey.currentState!.validate()) return;
 
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
+    final auth = context.read<AuthProvider>();
+    final success = await auth.signIn(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
-      try {
-        await Future.delayed(const Duration(seconds: 1));
-        if (!mounted) return;
+    if (!mounted) return;
+    setState(() => _isLoading = false);
 
-        context.read<AppProvider>().login(
-              _emailController.text,
-              _passwordController.text,
-            );
-
-        // Eksekusi langsung
-        Navigator.pushReplacementNamed(context, '/home');
-      } catch (e) {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login gagal. Silakan coba lagi.')),
-          );
-        }
-      }
+    if (success) {
+      final isComplete = auth.isProfileComplete;
+      Navigator.pushReplacementNamed(
+        context,
+        isComplete ? '/home' : '/profile-setup',
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error ?? 'Login gagal')),
+      );
     }
   }
 
@@ -103,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               alignment: Alignment.center,
                               child: Icon(Icons.image_not_supported,
                                   size: 80,
-                                  color: AppColors.primary.withOpacity(0.3)),
+                                  color: AppColors.primary.withAlpha((0.3 * 255).round())),
                             );
                           },
                         ),
@@ -364,7 +362,7 @@ class LoginPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primary.withOpacity(0.08)
+      ..color = AppColors.primary.withAlpha((0.08 * 255).round())
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

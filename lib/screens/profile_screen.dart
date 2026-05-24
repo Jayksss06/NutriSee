@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../providers/app_provider.dart';
+import '../providers/auth/auth_provider.dart'; // ✅ sama, tidak perlu ganti
 import '../utils/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -9,8 +9,16 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final user = provider.user;
+    // ✅ UBAH: AppProvider → AuthProvider, .user → .userModel
+    final provider = context.watch<AuthProvider>();
+    final user = provider.userModel;
+
+    // ✅ TAMBAH: handle kalau user belum load dari Firestore
+    if (user == null) {
+      return const SafeArea(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -23,10 +31,10 @@ class ProfileScreen extends StatelessWidget {
               width: 90,
               height: 90,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withAlpha((0.1 * 255).round()),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.person, size: 54, color: AppColors.primary),
+              child: const Icon(Icons.person, size: 54, color: AppColors.primary),
             ),
             const SizedBox(height: 12),
             Text(
@@ -64,7 +72,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withAlpha((0.04 * 255).round()),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -92,7 +100,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withAlpha((0.04 * 255).round()),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -130,8 +138,9 @@ class ProfileScreen extends StatelessWidget {
                               child: Text('Batal', style: GoogleFonts.inter()),
                             ),
                             ElevatedButton(
+                              // ✅ UBAH: provider.logout() → provider.signOut()
                               onPressed: () {
-                                provider.logout();
+                                provider.signOut();
                                 Navigator.pushNamedAndRemoveUntil(
                                     context, '/login', (_) => false);
                               },
@@ -166,7 +175,7 @@ class ProfileScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha((0.04 * 255).round()),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "913273396224",
+    "project_id": "nutrisee-1770e",
+    "storage_bucket": "nutrisee-1770e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:913273396224:android:f9bc334e2adad6c3fc4ce5",
+        "android_client_info": {
+          "package_name": "com.example.nutrisee"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1f9DEZ0OJN3V_EpV7cyRb2SiaTZ1j0z0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

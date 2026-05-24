@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../providers/app_provider.dart';
+import '../providers/auth/auth_provider.dart';   // ✅ fix: auth/ subfolder
+import '../providers/nutrition_provider.dart';
 import '../utils/app_theme.dart';
 import '../widgets/calorie_gauge_widget.dart';
 import '../widgets/bmi_widget.dart';
@@ -9,6 +10,7 @@ import '../widgets/macro_card.dart';
 import '../widgets/weight_tracker_widget.dart';
 import '../widgets/nutrition_chart_widget.dart';
 import 'profile_screen.dart';
+import 'nutri_diary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,17 +22,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  final List<Widget> _pages = const [
+    _DashboardView(),
+    ProfileScreen(),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body:
-          _selectedIndex == 0 ? const _DashboardView() : const ProfileScreen(),
+      body: _pages[_selectedIndex],
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Mengubah dari showModalBottomSheet ke navigasi rute formal
-          Navigator.pushNamed(context, '/add-data');
-        },
+        onPressed: () => Navigator.pushNamed(context, '/add-data'),
         backgroundColor: AppColors.primary,
         shape: const CircleBorder(),
         elevation: 4,
@@ -45,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ── DASHBOARD ─────────────────────────────────────────────
 class _DashboardView extends StatefulWidget {
   const _DashboardView();
 
@@ -54,9 +58,25 @@ class _DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<_DashboardView> {
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final uid = context.read<AuthProvider>().firebaseUser?.uid;
+    if (uid != null) {
+      context.read<NutritionProvider>().init(uid);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final user = provider.user;
+    final auth = context.watch<AuthProvider>();
+    final nutrition = context.watch<NutritionProvider>();
+    final user = auth.userModel;
+
+    if (user == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -65,80 +85,113 @@ class _DashboardViewState extends State<_DashboardView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            Text(
-              'Hello,',
-              style: GoogleFonts.inter(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Text(
-              user.name.isEmpty ? 'Pengguna' : user.name,
-              style: GoogleFonts.inter(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
+
+            // ── Header ───────────────────────────────────
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _statChip('Umur', '${user.age}th'),
-                const SizedBox(width: 8),
-                _statChip('Tinggi', '${user.height.toStringAsFixed(0)}cm'),
-                const SizedBox(width: 8),
-                _statChip('Berat', '${user.weight.toStringAsFixed(0)}kg'),
-                const SizedBox(width: 8),
-                _statChip(
-                    'Target', '${user.targetWeight.toStringAsFixed(0)}kg'),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Hello,',
+                      style: GoogleFonts.inter(
+                          fontSize: 15, color: AppColors.textSecondary)),
+                  Text(
+                    user.name.isEmpty ? 'Pengguna' : user.name,
+                    style: GoogleFonts.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary),
+                  ),
+                ]),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const NutriDiaryScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.menu_book_rounded,
+                          color: AppColors.primary, size: 16),
+                      const SizedBox(width: 6),
+                      Text('Diary',
+                          style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary)),
+                    ]),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
+
+            // ── Stat chips ───────────────────────────────
+            Row(children: [
+              _statChip('Umur', '${user.age}th'),
+              const SizedBox(width: 8),
+              _statChip('Tinggi', '${user.height.toStringAsFixed(0)}cm'),
+              const SizedBox(width: 8),
+              _statChip('Berat', '${user.weight.toStringAsFixed(0)}kg'),
+              const SizedBox(width: 8),
+              _statChip('Target', '${user.targetWeight.toStringAsFixed(0)}kg'),
+            ]),
+            const SizedBox(height: 16),
+
+            // ── Calorie Gauge ────────────────────────────
             CalorieGaugeWidget(
               targetCalories: user.targetCalories,
-              caloriesEaten: provider.caloriesEaten,
-              caloriesBurned: provider.caloriesBurned,
+              caloriesEaten: nutrition.caloriesEaten,
+              caloriesBurned: nutrition.caloriesBurned,
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: MacroCard(
-                    label: 'Karbo',
-                    current: provider.carbsToday.round(),
-                    target: user.targetCarbs,
-                    unit: 'g',
-                    color: AppColors.primary,
-                  ),
+
+            // ── Macro Cards ──────────────────────────────
+            Row(children: [
+              Expanded(
+                child: MacroCard(
+                  label: 'Karbo',
+                  current: nutrition.carbsToday.round(),
+                  target: user.targetCarbs,
+                  unit: 'g',
+                  color: AppColors.primary,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: MacroCard(
-                    label: 'Protein',
-                    current: provider.proteinToday.round(),
-                    target: user.targetProtein,
-                    unit: 'g',
-                    color: AppColors.primary,
-                  ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MacroCard(
+                  label: 'Protein',
+                  current: nutrition.proteinToday.round(),
+                  target: user.targetProtein,
+                  unit: 'g',
+                  color: AppColors.primary,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: MacroCard(
-                    label: 'Lemak',
-                    current: provider.fatToday.round(),
-                    target: user.targetFat,
-                    unit: 'g',
-                    color: AppColors.primary,
-                  ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MacroCard(
+                  label: 'Lemak',
+                  current: nutrition.fatToday.round(),
+                  target: user.targetFat,
+                  unit: 'g',
+                  color: AppColors.primary,
                 ),
-              ],
-            ),
+              ),
+            ]),
             const SizedBox(height: 16),
+
+            // ── BMI ──────────────────────────────────────
             BmiWidget(bmi: user.bmi, category: user.bmiCategory),
             const SizedBox(height: 16),
-            WeightTrackerWidget(weightHistory: provider.weightHistory),
+
+            // ── Weight Tracker ───────────────────────────
+            WeightTrackerWidget(weightHistory: nutrition.weightLogs),
             const SizedBox(height: 16),
-            NutritionChartWidget(weeklyData: provider.weeklyNutrition),
+
+            // ── Weekly Chart ─────────────────────────────
+            NutritionChartWidget(weeklyData: nutrition.weeklyNutrition),
             const SizedBox(height: 80),
           ],
         ),
@@ -161,34 +214,25 @@ class _DashboardViewState extends State<_DashboardView> {
             ),
           ],
         ),
-        child: Column(
-          children: [
-            Text(
-              label,
+        child: Column(children: [
+          Text(label,
               style: GoogleFonts.inter(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            Text(
-              value,
+                  fontSize: 11, color: AppColors.textSecondary)),
+          Text(value,
               style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary)),
+        ]),
       ),
     );
   }
 }
 
+// ── BOTTOM NAV ────────────────────────────────────────────
 class _BottomNav extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
-
   const _BottomNav({required this.selectedIndex, required this.onTap});
 
   @override
@@ -201,28 +245,25 @@ class _BottomNav extends StatelessWidget {
       elevation: 8,
       child: SizedBox(
         height: 60,
-        child: Row(
-          // Menghapus CrossAxisAlignment.stretch untuk menghindari konflik layout
-          children: [
-            Expanded(
-              child: _NavItem(
-                icon: Icons.home_rounded,
-                label: 'Beranda',
-                isSelected: selectedIndex == 0,
-                onTap: () => onTap(0),
-              ),
+        child: Row(children: [
+          Expanded(
+            child: _NavItem(
+              icon: Icons.home_rounded,
+              label: 'Beranda',
+              isSelected: selectedIndex == 0,
+              onTap: () => onTap(0),
             ),
-            const Expanded(child: SizedBox()), // Ruang kosong untuk FAB
-            Expanded(
-              child: _NavItem(
-                icon: Icons.person_rounded,
-                label: 'Profil',
-                isSelected: selectedIndex == 1,
-                onTap: () => onTap(1),
-              ),
+          ),
+          const Expanded(child: SizedBox()),
+          Expanded(
+            child: _NavItem(
+              icon: Icons.person_rounded,
+              label: 'Profil',
+              isSelected: selectedIndex == 1,
+              onTap: () => onTap(1),
             ),
-          ],
-        ),
+          ),
+        ]),
       ),
     );
   }
@@ -247,28 +288,20 @@ class _NavItem extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        height:
-            double.infinity, // Memaksa area sentuh memenuhi tinggi BottomAppBar
+        height: double.infinity,
         alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon,
               color: isSelected ? AppColors.primary : AppColors.textLight,
-              size: 24,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
+              size: 24),
+          const SizedBox(height: 2),
+          Text(label,
               style: GoogleFonts.inter(
-                fontSize: 11,
-                color: isSelected ? AppColors.primary : AppColors.textLight,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
+                  fontSize: 11,
+                  color: isSelected ? AppColors.primary : AppColors.textLight,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.normal)),
+        ]),
       ),
     );
   }

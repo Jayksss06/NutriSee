@@ -142,7 +142,7 @@ class GaugePainter extends CustomPainter {
 
     // Background arc
     final bgPaint = Paint()
-      ..color = Colors.white.withOpacity(0.2)
+      ..color = Colors.white.withAlpha((0.2 * 255).round())
       ..strokeWidth = 10
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
+import '../providers/auth/auth_provider.dart';
+import 'package:provider/provider.dart'; 
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -30,21 +32,31 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _signup() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_agreeTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Harap setujui Terms & Condition')),
-        );
-        return;
-      }
-      setState(() => _isLoading = true);
-      try {
-        await Future.delayed(const Duration(seconds: 1));
-        if (!mounted) return;
-        Navigator.pushNamed(context, '/otp');
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    if (!_formKey.currentState!.validate()) return;
+    if (!_agreeTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Harap setujui Terms & Condition')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    final auth = context.read<AuthProvider>();
+    final success = await auth.signUp(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _nameController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/profile-setup');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.error ?? 'Registrasi gagal')),
+      );
     }
   }
 
@@ -121,10 +133,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (v) {
-                                  if (v == null || v.isEmpty)
+                                  if (v == null || v.isEmpty) {
                                     return 'Masukkan email';
-                                  if (!v.contains('@'))
+                                  }
+                                  if (!v.contains('@')) {
                                     return 'Email tidak valid';
+                                  }
                                   return null;
                                 },
                               ),
@@ -140,8 +154,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 onTogglePassword: () => setState(
                                     () => _obscurePassword = !_obscurePassword),
                                 validator: (v) {
-                                  if (v == null || v.isEmpty)
+                                  if (v == null || v.isEmpty) {
                                     return 'Masukkan password';
+                                  }
                                   if (v.length < 6) return 'Min 6 karakter';
                                   return null;
                                 },
@@ -181,9 +196,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                       checkColor: AppColors
                                           .primary, // Centang warna hijau
                                       fillColor:
-                                          MaterialStateProperty.resolveWith(
+                                          WidgetStateProperty.resolveWith(
                                         (states) => states.contains(
-                                                MaterialState.selected)
+                                                WidgetState.selected)
                                             ? Colors.white
                                             : Colors.transparent,
                                       ),
@@ -403,7 +418,7 @@ class SignupPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = AppColors.primary.withOpacity(0.08)
+      ..color = AppColors.primary.withAlpha((0.08 * 255).round())
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

@@ -116,7 +116,7 @@ class FoodPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withAlpha((0.06 * 255).round())
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -166,9 +166,9 @@ class FoodPatternPainter extends CustomPainter {
             width: 8,
             height: 8,
           ),
-          paint..color = const Color(0xFF4ADE80).withOpacity(0.4),
+          paint..color = const Color(0xFF4ADE80).withAlpha((0.4 * 255).round()),
         );
-        paint.color = Colors.white.withOpacity(0.06);
+        paint.color = Colors.white.withAlpha((0.06 * 255).round());
       }
     }
   }
